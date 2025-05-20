@@ -4,6 +4,16 @@ This Flask-based web app allows you to **send WhatsApp messages and media files*
 
 ---
 
+---
+
+### ⚠️ Important Cleanup Step
+
+Before running the application for the first time, **please delete the placeholder files** `a.txt` and `b.txt` located in the `media` and `uploads` directories respectively. These files are included for demonstration purposes but can interfere with file upload handling and media serving.
+
+You can delete these files manually through your file explorer or command line. Removing them ensures the app works smoothly with fresh user uploads.
+
+---
+
 ## 🚀 Project Description
 
 This project lets you:
@@ -39,3 +49,4 @@ It's especially useful for:
 ```bash
 git clone https://github.com/AruGPT/Twilio-WhatsApp-Client-Portal.git
 cd Twilio-WhatsApp-Client-Portal
+
