@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Send WhatsApp Message</title>
+  <style>
+    /* Reset and basics */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background: #f7f3fc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #333;
+    }
+
+    .container {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(100, 50, 150, 0.1);
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+
+    h1 {
+      color: #6a0dad;
+      margin-bottom: 25px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 12px 15px;
+      font-size: 1rem;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      resize: vertical;
+      transition: border-color 0.3s ease;
+    }
+    textarea:focus {
+      border-color: #6a0dad;
+      outline: none;
+      box-shadow: 0 0 6px rgba(106, 13, 173, 0.4);
+    }
+
+    #drop-area {
+      margin-top: 25px;
+      border: 3px dashed #a686d7;
+      border-radius: 12px;
+      padding: 25px;
+      cursor: pointer;
+      transition: border-color 0.3s ease, background-color 0.3s ease;
+      background: #faf7ff;
+      color: #7d62c9;
+      font-weight: 600;
+      user-select: none;
+    }
+    #drop-area.highlight {
+      border-color: #6a0dad;
+      background-color: #efe8ff;
+      color: #4a2ea6;
+      box-shadow: 0 0 10px rgba(106, 13, 173, 0.3);
+    }
+
+    #fileElem {
+      display: none;
+    }
+
+    #file-list {
+      margin-top: 15px;
+      font-size: 0.95rem;
+      color: #4a2ea6;
+      font-weight: 600;
+      min-height: 24px;
+      user-select: text;
+      word-wrap: break-word;
+    }
+
+    button#fileSelectBtn {
+      background-color: #6a0dad;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-left: 8px;
+      transition: background-color 0.25s ease;
+      user-select: none;
+    }
+    button#fileSelectBtn:hover {
+      background-color: #501b96;
+    }
+
+    button[type="submit"] {
+      margin-top: 30px;
+      background-color: #6a0dad;
+      color: white;
+      font-weight: 700;
+      font-size: 1.1rem;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      width: 100%;
+      transition: background-color 0.3s ease;
+      user-select: none;
+    }
+    button[type="submit"]:hover {
+      background-color: #501b96;
+    }
+
+    @media (max-width: 450px) {
+      .container {
+        padding: 20px 25px;
+      }
+      textarea {
+        height: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Send WhatsApp Message</h1>
+    <form method="POST" enctype="multipart/form-data" id="upload-form" novalidate>
+      <textarea name="message" placeholder="Enter your message (optional)"></textarea>
+
+      <div id="drop-area" tabindex="0" aria-label="File upload area. Drag and drop your file here or use the browse button.">
+        <p>Drag & Drop your file here or <button type="button" id="fileSelectBtn" aria-haspopup="true">Browse</button></p>
+        <input type="file" id="fileElem" name="media_file" aria-describedby="file-list" />
+        <div id="file-list" aria-live="polite"></div>
+      </div>
+
+      <button type="submit" aria-label="Send WhatsApp message">Send Message</button>
+    </form>
+  </div>
+
+  <script>
+    const dropArea = document.getElementById('drop-area');
+    const fileInput = document.getElementById('fileElem');
+    const fileList = document.getElementById('file-list');
+    const fileSelectBtn = document.getElementById('fileSelectBtn');
+    const form = document.getElementById('upload-form');
+    const messageField = form.querySelector('textarea[name="message"]');
+
+    // Feedback div for server responses
+    const feedback = document.createElement('div');
+    feedback.style.marginTop = '15px';
+    feedback.style.fontWeight = '600';
+    feedback.style.minHeight = '24px';
+    form.appendChild(feedback);
+
+    fileSelectBtn.addEventListener('click', () => fileInput.click());
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropArea.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropArea.classList.add('highlight');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropArea.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropArea.classList.remove('highlight');
+      }, false);
+    });
+
+    dropArea.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length > 0) {
+        // Show dropped file names only
+        displayFiles(files);
+        alert('Please click the "Browse" button to select the file after drag and drop.');
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        displayFiles(fileInput.files);
+      } else {
+        fileList.innerHTML = '';
+      }
+    });
+
+    function displayFiles(files) {
+      fileList.innerHTML = '';
+      for (let i = 0; i < files.length; i++) {
+        fileList.innerHTML += `<p>${files[i].name}</p>`;
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      feedback.textContent = '⏳ Sending...';
+      feedback.style.color = '#6a0dad';
+
+      const formData = new FormData(form);
+
+      try {
+        const response = await fetch('/', {
+          method: 'POST',
+          body: formData
+        });
+
+        const text = await response.text();
+
+        if (response.ok) {
+          feedback.textContent = text;
+          feedback.style.color = text.startsWith('✅') ? 'green' : 'red';
+
+          if (text.startsWith('✅')) {
+            // Clear inputs on success
+            messageField.value = '';
+            fileInput.value = '';
+            fileList.innerHTML = '';
+          }
+        } else {
+          feedback.textContent = `❌ Error: ${text}`;
+          feedback.style.color = 'red';
+        }
+      } catch (err) {x
+        feedback.textContent = `❌ Network error: ${err.message}`;
+        feedback.style.color = 'red';
+      }
+    });
+  </script>
+</body>
+</html>
