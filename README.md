@@ -1,16 +1,8 @@
-# 📲 Twilio WhatsApp Media Sender
+# 📲 WhatsApp Message Portal
 
-This Flask-based web app allows you to **send WhatsApp messages and media files** (like images, PDFs, MP4s, MP3s) using the Twilio API. It's a quick and user-friendly interface designed for demos, automation, or customer notification testing over WhatsApp.
-
----
+This Flask-based web app allows you to **send WhatsApp messages and media files** (like images, PDFs, MP4s, MP3s) using the Meta API. It's a quick and user-friendly interface designed for demos, automation, or customer notification testing over WhatsApp.
 
 ---
-
-### ⚠️ Important Cleanup Step
-
-Before running the application for the first time, **please delete the placeholder files** `a.txt` and `b.txt` located in the `media` and `uploads` directories respectively. These files are included for demonstration purposes but can interfere with file upload handling and media serving.
-
-You can delete these files manually through your file explorer or command line. Removing them ensures the app works smoothly with fresh user uploads.
 
 ---
 
