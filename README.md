@@ -39,6 +39,6 @@ It's especially useful for:
 ### 1. 🔧 Clone the repository
 
 ```bash
-git clone https://github.com/AruGPT/Twilio-WhatsApp-Client-Portal.git
-cd Twilio-WhatsApp-Client-Portal
+git clone https://github.com/AruGPT/WhatsApp-Client-Portal.git
+cd WhatsApp-Client-Portal
 
