@@ -1,27 +1,21 @@
 from flask import Flask, render_template, request, send_from_directory
-from twilio.rest import Client
 from werkzeug.utils import secure_filename
 import os
+import requests
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max
 
-# === Configuration via environment variables ===
-NGROK_URL = os.getenv("NGROK_URL", "https://your-ngrok-url.ngrok-free.app")  # Update before use
+# === Environment config ===
+NGROK_URL = os.getenv("NGROK_URL", "https://your-ngrok-url.ngrok-free.app")
+WHATSAPP_TOKEN = os.getenv("WHATSAPP_TOKEN", "your_meta_access_token")
+PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID", "your_phone_number_id")
+RECIPIENT_PHONE = os.getenv("MY_WHATSAPP_NUMBER", "recipient_phone_number_including_country_code")  # e.g., 15551234567
 
-# Allowed file types
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'pdf', 'mp4', 'mp3'}
 
-# Twilio credentials and numbers from environment variables
-ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "your_account_sid")
-AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "your_auth_token")
-TWILIO_NUMBER = os.getenv("TWILIO_NUMBER", "whatsapp:+1234567890")
-MY_NUMBER = os.getenv("MY_WHATSAPP_NUMBER", "whatsapp:+1234567890")
-
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-client = Client(ACCOUNT_SID, AUTH_TOKEN)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -51,31 +45,57 @@ def index():
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
-
             media_url = f"{NGROK_URL}/uploads/{filename}"
             print(f"Media URL to send: {media_url}")
 
-        if (not message or message.strip() == '') and not media_url:
+        if not message and not media_url:
             return "❌ Please provide a message or upload a file.", 400
 
-        msg_data = {
-            'from_': TWILIO_NUMBER,
-            'to': MY_NUMBER
+        headers = {
+            "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+            "Content-Type": "application/json"
         }
 
-        if message and message.strip():
-            msg_data['body'] = message.strip()
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": RECIPIENT_PHONE,
+            "type": "text",
+            "text": {"body": message.strip()} if message else {"body": ""}
+        }
 
+        # If media is present, change type
         if media_url:
-            msg_data['media_url'] = [media_url]
+            file_ext = media_url.split('.')[-1].lower()
+
+            if file_ext in ['jpg', 'jpeg', 'png']:
+                payload["type"] = "image"
+                payload["image"] = {"link": media_url, "caption": message or ""}
+            elif file_ext == 'pdf':
+                payload["type"] = "document"
+                payload["document"] = {"link": media_url, "caption": message or ""}
+            elif file_ext == 'mp4':
+                payload["type"] = "video"
+                payload["video"] = {"link": media_url, "caption": message or ""}
+            elif file_ext == 'mp3':
+                payload["type"] = "audio"
+                payload["audio"] = {"link": media_url}
+            else:
+                return "❌ Unsupported media type.", 400
 
         try:
-            client.messages.create(**msg_data)
-            return "✅ Message sent successfully!"
+            url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
+            response = requests.post(url, headers=headers, json=payload)
+
+            if response.status_code == 200:
+                return "✅ Message sent successfully!"
+            else:
+                print(response.text)
+                return f"❌ Failed: {response.status_code} - {response.text}", 500
+
         except Exception as e:
             import traceback
             traceback.print_exc()
-            return f"❌ Failed to send message: {str(e)}", 500
+            return f"❌ Error: {str(e)}", 500
 
     return render_template('index.html')
 
